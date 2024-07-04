@@ -18,7 +18,7 @@ import java.util.Optional;
 @AllArgsConstructor
 //@CrossOrigin(origins = "http://localhost:5173")
 //@CrossOrigin("*")
-@CrossOrigin(origins = "https://frontendgameshare.up.railway.app")
+@CrossOrigin(origins = {"https://frontendgameshare.up.railway.app","*","http://localhost:5173"})
 public class UsuarioControlador {
     private final UsuarioServicio usuarioServicio;
 
