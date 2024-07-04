@@ -27,7 +27,7 @@ public class UsuarioControlador {
         Optional<Usuario> usuarioBuscado = usuarioServicio.buscarUsuarioPorEmail(usuarioDTO.getEmail());
 
         if (usuarioBuscado.isPresent()) {
-            return ResponseEntity.notFound().build();
+            return ResponseEntity.status(409).build();  // 409 Conflict si el usuario ya existe
         } else {
             return ResponseEntity.ok(usuarioServicio.registrarUsuario(usuarioDTO));
         }
