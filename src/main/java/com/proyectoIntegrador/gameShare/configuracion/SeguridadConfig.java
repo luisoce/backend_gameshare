@@ -23,6 +23,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.springframework.security.config.Customizer.withDefaults;
+
 // Clase que contiene la configuración relacionada con la seguridad.
 @Configuration
 @EnableWebSecurity // Indica que se active la seguridad web en la app.
@@ -67,6 +69,7 @@ public class SeguridadConfig {
     @Bean
     SecurityFilterChain filtrar(HttpSecurity peticion) throws Exception {
         peticion.csrf(csrf -> csrf.disable())
+                .cors(withDefaults()) // Habilitar CORS
                 .exceptionHandling(exceptionHandling -> exceptionHandling
                         .authenticationEntryPoint(jwtAutenticacionDeEntrada)
                 )
