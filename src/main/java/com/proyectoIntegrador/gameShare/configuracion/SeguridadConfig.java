@@ -10,69 +10,54 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.List;
-
+// Clase que contiene la configuración relacionada con la seguridad.
 @Configuration
-@EnableWebSecurity
+@EnableWebSecurity // Indica que se active la seguridad web en la app.
 @AllArgsConstructor
+@CrossOrigin("*")
 public class SeguridadConfig {
+    private JwtAutenticacionDeEntrada jwtAutenticacionDeEntrada;
 
-    private final JwtAutenticacionDeEntrada jwtAutenticacionDeEntrada;
-    private final JwtFiltroDeAutenticacion jwtFiltroDeAutenticacion;
-
+    // Bean para verificar la información del usuario que va a loguearse.
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
-        return authenticationConfiguration.getAuthenticationManager();
+    AuthenticationManager asistenteDeAutenticacion(AuthenticationConfiguration configuracionDeAutenticacion) throws Exception {
+        return configuracionDeAutenticacion.getAuthenticationManager();
     }
 
+    // Bean para encriptar contraseña.
     @Bean
-    public PasswordEncoder passwordEncoder() {
+    PasswordEncoder encriptarContrasenia() {
         return new BCryptPasswordEncoder();
     }
 
+    // Bean para incorporar filtro de seguridad JWT desarrollado en la clase JwtFiltroDeAutenticacion.
     @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("https://frontendgameshare.up.railway.app"));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true);
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-        return source;
+    JwtFiltroDeAutenticacion jwtFiltroDeAutenticacion() {
+        return new JwtFiltroDeAutenticacion();
     }
 
+    // Bean para establecer una cadena de filtros de seguridad en la app. Aquí se determinan los permisos según rol del usuario.
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.csrf(AbstractHttpConfigurer::disable)
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+    SecurityFilterChain filtrar(HttpSecurity peticion) throws Exception {
+        peticion.csrf(csrf -> csrf.disable())
                 .exceptionHandling(exceptionHandling -> exceptionHandling
-                        .authenticationEntryPoint(jwtAutenticacionDeEntrada))
+                        .authenticationEntryPoint(jwtAutenticacionDeEntrada)
+                )
                 .sessionManagement(sessionManagement -> sessionManagement
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
                 .authorizeHttpRequests(authorizeRequests -> authorizeRequests
-                        // Rutas que requieren autenticación
                         .requestMatchers(HttpMethod.POST, "/videojuegos/nuevo").authenticated()
-                        .requestMatchers(HttpMethod.DELETE, "/videojuegos/**").authenticated()
-                        .requestMatchers(HttpMethod.PUT, "/videojuegos/**").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/categorias/nuevo").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/alquiler/nuevo").authenticated()
-                        .requestMatchers(HttpMethod.PUT, "/alquiler/**").authenticated()
-                        .requestMatchers(HttpMethod.DELETE, "/alquiler/**").authenticated()
-                        // Rutas públicas
+                        .requestMatchers(HttpMethod.DELETE,"/videojuegos/**" ).authenticated()
                         .requestMatchers(HttpMethod.GET, "/videojuegos/**").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/videojuegos/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/usuarios/nuevo").permitAll()
                         .requestMatchers(HttpMethod.GET, "/usuarios/**").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/usuarios/**").hasAuthority("ADMINISTRADOR")
@@ -80,13 +65,15 @@ public class SeguridadConfig {
                         .requestMatchers(HttpMethod.POST, "/conectarse").permitAll()
                         .requestMatchers(HttpMethod.POST, "/registrarAdmin").permitAll()
                         .requestMatchers(HttpMethod.GET, "/caracteristicas/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/categorias/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/categorias/**" ).permitAll()
+                        .requestMatchers(HttpMethod.POST, "/categorias/nuevo").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/alquiler/nuevo").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/alquiler/").authenticated()
                         .requestMatchers(HttpMethod.GET, "/alquiler/**").permitAll()
-                        // Cualquier otra solicitud requiere autenticación
-                        .anyRequest().authenticated());
-
-        // Agregar el filtro JWT antes del filtro de autenticación de nombre de usuario y contraseña
-        http.addFilterBefore(jwtFiltroDeAutenticacion, UsernamePasswordAuthenticationFilter.class);
-        return http.build();
+                        .requestMatchers(HttpMethod.DELETE, "/alquiler/**").authenticated()
+                        .anyRequest().authenticated()
+                );
+        peticion.addFilterBefore(jwtFiltroDeAutenticacion(), UsernamePasswordAuthenticationFilter.class);
+        return peticion.build();
     }
 }
