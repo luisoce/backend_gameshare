@@ -21,12 +21,13 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
+import java.util.List;
 
 // Clase que contiene la configuración relacionada con la seguridad.
 @Configuration
 @EnableWebSecurity // Indica que se active la seguridad web en la app.
 @AllArgsConstructor
-@CrossOrigin("*")
+
 public class SeguridadConfig {
     private JwtAutenticacionDeEntrada jwtAutenticacionDeEntrada;
 
@@ -52,9 +53,9 @@ public class SeguridadConfig {
     @Bean
     CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("https://frontendgameshare.up.railway.app"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowedOrigins(List.of("https://frontendgameshare.up.railway.app"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
