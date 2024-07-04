@@ -15,6 +15,7 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.servlet.HandlerExceptionResolver;
 
 import java.io.IOException;
 import java.util.List;
@@ -28,6 +29,19 @@ public class JwtFiltroDeAutenticacion extends OncePerRequestFilter {
 
     @Autowired
     private JwtGenerador jwtGenerador;
+
+    @Autowired
+    private HandlerExceptionResolver resolver;
+
+    private static final List<String> EXCLUDE_URLS = List.of(
+            "/usuarios/nuevo",
+            "/conectarse",
+            "/registrarAdmin",
+            "/categorias/**",
+            "/videojuegos/**",
+            "/caracteristicas/**",
+            "/alquiler/**"
+    );
 
     private String obtenerTokenDeSolicitud(HttpServletRequest solicitud) {
         String bearerToken = solicitud.getHeader("Authorization");
