@@ -16,6 +16,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -27,37 +28,42 @@ import java.util.List;
 @AllArgsConstructor
 public class SeguridadConfig {
     private JwtAutenticacionDeEntrada jwtAutenticacionDeEntrada;
+    private final JwtFiltroDeAutenticacion jwtFiltroDeAutenticacion;
 
+    // Bean para configurar el AuthenticationManager
     @Bean
-    AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
     }
 
+    // Bean para codificar las contraseñas utilizando BCrypt
     @Bean
-    PasswordEncoder passwordEncoder() {
+    public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    // Bean para configurar las políticas de CORS
     @Bean
-    JwtFiltroDeAutenticacion jwtFiltroDeAutenticacion() {
-        return new JwtFiltroDeAutenticacion();
-    }
-
-    @Bean
-    CorsConfigurationSource corsConfigurationSource() {
+    public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
+        // Permitimos el origen del frontend
         configuration.setAllowedOrigins(List.of("https://frontendgameshare.up.railway.app"));
+        // Permitimos los métodos HTTP necesarios
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE"));
+        // Permitimos todos los headers
         configuration.setAllowedHeaders(List.of("*"));
+        // Permitimos el uso de credenciales (cookies, encabezados de autenticación)
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        // Aplicamos la configuración de CORS a todas las rutas
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
 
+    // Bean para configurar la cadena de filtros de seguridad
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .exceptionHandling(exceptionHandling -> exceptionHandling
@@ -65,10 +71,16 @@ public class SeguridadConfig {
                 .sessionManagement(sessionManagement -> sessionManagement
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorizeRequests -> authorizeRequests
+                        // Requieren autenticación
                         .requestMatchers(HttpMethod.POST, "/videojuegos/nuevo").authenticated()
-                        .requestMatchers(HttpMethod.DELETE,"/videojuegos/**").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/videojuegos/**").permitAll()
+                        .requestMatchers(HttpMethod.DELETE, "/videojuegos/**").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/videojuegos/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/categorias/nuevo").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/alquiler/nuevo").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/alquiler/**").authenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/alquiler/**").authenticated()
+                        // Permitidos sin autenticación
+                        .requestMatchers(HttpMethod.GET, "/videojuegos/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/usuarios/nuevo").permitAll()
                         .requestMatchers(HttpMethod.GET, "/usuarios/**").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/usuarios/**").hasAuthority("ADMINISTRADOR")
@@ -77,14 +89,12 @@ public class SeguridadConfig {
                         .requestMatchers(HttpMethod.POST, "/registrarAdmin").permitAll()
                         .requestMatchers(HttpMethod.GET, "/caracteristicas/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/categorias/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/categorias/nuevo").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/alquiler/nuevo").authenticated()
-                        .requestMatchers(HttpMethod.PUT, "/alquiler/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/alquiler/**").permitAll()
-                        .requestMatchers(HttpMethod.DELETE, "/alquiler/**").authenticated()
+                        // Cualquier otra solicitud requiere autenticación
                         .anyRequest().authenticated());
 
-        http.addFilterBefore(jwtFiltroDeAutenticacion(), UsernamePasswordAuthenticationFilter.class);
+        // Agregamos el filtro JWT antes del filtro de autenticación de nombre de usuario y contraseña
+        http.addFilterBefore(jwtFiltroDeAutenticacion, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 }
