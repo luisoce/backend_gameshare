@@ -21,10 +21,10 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
 import java.io.IOException;
 import java.util.List;
 
-// Valida la info del token y, de ser exitoso, establece la autenticación del usuario.
 @Data
 @Component
 public class JwtFiltroDeAutenticacion extends OncePerRequestFilter {
+
     @Autowired
     private DetallesDeUsuarioServicio detallesDeUsuarioServicio;
 
@@ -58,6 +58,7 @@ public class JwtFiltroDeAutenticacion extends OncePerRequestFilter {
         }
         return null;
     }
+
     @Override
     protected void doFilterInternal(HttpServletRequest solicitud,
                                     HttpServletResponse respuesta,

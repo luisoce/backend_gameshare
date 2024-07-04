@@ -27,41 +27,33 @@ import java.util.List;
 @EnableWebSecurity
 @AllArgsConstructor
 public class SeguridadConfig {
-    private JwtAutenticacionDeEntrada jwtAutenticacionDeEntrada;
+
+    private final JwtAutenticacionDeEntrada jwtAutenticacionDeEntrada;
     private final JwtFiltroDeAutenticacion jwtFiltroDeAutenticacion;
 
-    // Bean para configurar el AuthenticationManager
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
     }
 
-    // Bean para codificar las contraseñas utilizando BCrypt
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // Bean para configurar las políticas de CORS
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Permitimos el origen del frontend
         configuration.setAllowedOrigins(List.of("https://frontendgameshare.up.railway.app"));
-        // Permitimos los métodos HTTP necesarios
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE"));
-        // Permitimos todos los headers
         configuration.setAllowedHeaders(List.of("*"));
-        // Permitimos el uso de credenciales (cookies, encabezados de autenticación)
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        // Aplicamos la configuración de CORS a todas las rutas
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
 
-    // Bean para configurar la cadena de filtros de seguridad
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
@@ -71,7 +63,7 @@ public class SeguridadConfig {
                 .sessionManagement(sessionManagement -> sessionManagement
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorizeRequests -> authorizeRequests
-                        // Requieren autenticación
+                        // Rutas que requieren autenticación
                         .requestMatchers(HttpMethod.POST, "/videojuegos/nuevo").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/videojuegos/**").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/videojuegos/**").authenticated()
@@ -79,7 +71,7 @@ public class SeguridadConfig {
                         .requestMatchers(HttpMethod.POST, "/alquiler/nuevo").authenticated()
                         .requestMatchers(HttpMethod.PUT, "/alquiler/**").authenticated()
                         .requestMatchers(HttpMethod.DELETE, "/alquiler/**").authenticated()
-                        // Permitidos sin autenticación
+                        // Rutas públicas
                         .requestMatchers(HttpMethod.GET, "/videojuegos/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/usuarios/nuevo").permitAll()
                         .requestMatchers(HttpMethod.GET, "/usuarios/**").authenticated()
@@ -93,7 +85,7 @@ public class SeguridadConfig {
                         // Cualquier otra solicitud requiere autenticación
                         .anyRequest().authenticated());
 
-        // Agregamos el filtro JWT antes del filtro de autenticación de nombre de usuario y contraseña
+        // Agregar el filtro JWT antes del filtro de autenticación de nombre de usuario y contraseña
         http.addFilterBefore(jwtFiltroDeAutenticacion, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
